@@ -1,0 +1,38 @@
+#Yaml Pipeline example
+
+trigger: none
+
+pool: 'Replace_with_Your_Pool_Name'
+
+variables:
+- name: storageCslName
+  value: "CSL.Storage_Account.AZ"
+
+
+jobs:
+  - job: UseCSLST
+    displayName: Use CSL Storage Account
+    
+    steps:
+    - checkout: self
+      path: $(Build.Repository.Name)
+
+    # Download STorage account artifact from IMCSL feed
+    - task: DownloadPackage@1
+      displayName: 'Download CSL Artifact ${{ variables.storageCslName }}'
+      inputs:
+        packageType: 'nuget'
+        feed: '/22c003e2-e5e3-4c47-bb62-11649d82c74b'
+        view: 'Release'
+        definition: '${{ variables.storageCslName }}'
+        version: 'latest'
+        downloadPath: '$(System.DefaultWorkingDirectory)/${{ variables.storageCslName }}'
+
+    # Execute powershell script who contains project contexte parameters and call IMCSL function. Don't forget declare $(System.AccessToken) in environment variable because you need it for download library from azure devops feed.
+    - task: PowerShell@2
+      inputs:
+        filePath: '$(System.DefaultWorkingDirectory)/storageAccount.ps1'
+        pwsh: true
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
